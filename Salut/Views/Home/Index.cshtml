@@ -1,0 +1,463 @@
+﻿@model Salut.models.NotaFiscal
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-11">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h4>Cadastro de notas</h4>
+                </div>
+                <div class="card-body">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <div class="row">
+                        <div class="col-md-3 mt-3">
+                            <div class="form-group">
+                                <label asp-for="CNPJ" class="control-label"></label>
+                                <input asp-for="CNPJ" class="form-control maskCnpj" />
+                                <span id="CNPJerro" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mt-3">
+                            <div class="form-group">
+                                <label asp-for="CanalcompraProduto" class="control-label"></label>
+                                <input asp-for="CanalcompraProduto" class="form-control" />
+                                <span id="CanalcompraProdutoerro" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mt-3">
+                            <div class="form-group">
+                                <label asp-for="DataCompra" class="control-label"></label>
+                                <input asp-for="DataCompra" type="date" class="form-control" />
+                                <span id="DataCompraerro" class="text-danger"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mt-3">
+                            <div class="form-group">
+                                <label asp-for="NumeroCupomFiscal" class="control-label"></label>
+                                <input asp-for="NumeroCupomFiscal" class="form-control" />
+                                <span id="NumeroCupomFiscalerro" class="text-danger"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mt-3">
+                            <div class="form-group">
+                                <label class="control-label">Produtos</label>
+                                <select id="produtos" class="form-select">
+                                    <option value="" selected disabled>Selecione um produto</option>
+                                    <option value="produto 1">produto 1</option>
+                                    <option value="produto 2">produto 2</option>
+                                    <option value="produto 3">produto 3</option>
+                                    <option value="produto 4">produto 4</option>
+                                    <option value="produto 5">produto 5</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mt-3">
+                            <label></label>
+                            <div class="input-group ">
+                                <input id="Quantidade" type="number" class="form-control" placeholder="Quantidade">
+                                <div class="input-group-append">
+                                    <button onclick="produto.SalvarNaTabela()" class="btn btn-primary" type="button">Adicionar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mt-3">
+                            <div >
+                                <table id="myTable" class="table table-borderless">
+                                    <thead>
+                                        <tr>
+                                            <th>
+                                                Produto
+                                            </th>
+                                            <th>
+                                                Quantidade
+                                            </th>
+                                            <th>
+                                                Ações
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mt-3">
+                            <div class="control-labelvertical-align: mt-4">
+                                <label asp-for="ArquivoFiscal" class="input-label"></label>
+                                <input asp-for="ArquivoFiscal" id="ArquivoFiscal" type="file" accept=".jpg, .png, .pdf" />
+                                <span id="ArquivoFiscalerro" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <button style="width:100%" id="submit" class="btn btn-primary">Enviar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/inputmask/jquery.inputmask.bundle.min.js"></script>
+<script src="//cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+
+<script type="text/javascript">
+
+    class CadastroDeNotas {
+        constructor() {
+            this.arrayProduto = [];
+            this.id = 1;
+            this.MaxIncremet = 0;
+            this.Salvar();
+            this.ValidacaoEventos();
+
+        }
+
+        SalvarNaTabela() {
+            let produto = document.getElementById('produtos');
+            let quantidade = document.getElementById('Quantidade');
+
+            let array = {};
+            array.id = this.id;
+            array.produto = produto.value;
+            array.quantidade = parseInt(quantidade.value == '' ? 0 : quantidade.value);
+
+            if (this.ValidacaoNaTabela(array)) {
+                this.arrayProduto.push(array);
+                this.ListaTabela();
+                this.id++
+
+                produto.value = '';
+                quantidade.value = '';
+            }
+
+        }
+
+        ListaTabela() {
+            let tbody = document.getElementById('tbody');
+            tbody.innerText = '';
+
+            for (var i = 0; i < this.arrayProduto.length; i++) {
+
+                let tr = tbody.insertRow();
+
+                let td_produto = tr.insertCell();
+                let td_quantidade = tr.insertCell();
+                let td_Acoes = tr.insertCell();
+
+                td_produto.innerText = this.arrayProduto[i].produto
+                td_quantidade.innerText = this.arrayProduto[i].quantidade
+
+                let apagar = document.createElement('div');
+                apagar.textContent = 'Apagar';
+                apagar.setAttribute('onclick', 'produto.Deletar(' + this.arrayProduto[i].id + ')')
+
+
+                td_Acoes.appendChild(apagar);
+            }
+        }
+
+        Deletar(id) {
+            let tbody = document.getElementById('tbody');
+
+            for (var i = 0; i < this.arrayProduto.length; i++) {
+                if (this.arrayProduto[i].id == id) {
+
+                    this.MaxIncremet -= this.arrayProduto[i].quantidade;
+                    this.arrayProduto.splice(i, 1)
+                    tbody.deleteRow(i);
+                }
+            }
+        }
+
+
+        LimparCampos() {
+            this.arrayProduto = [];
+            this.id = 1;
+            this.MaxIncremet = 0;
+            document.getElementById('CNPJ').value = '';
+            document.getElementById('CanalcompraProduto').value = '';
+            document.getElementById('DataCompra').value = '';
+            document.getElementById('NumeroCupomFiscal').value = '';
+            document.getElementById("ArquivoFiscal").value = '';
+
+            let tbody = document.getElementById('tbody');
+            while (tbody.rows.length > 0) {
+                tbody.deleteRow(0);
+            }
+        }
+
+
+
+        LerDados() {
+            let CNPJ = document.getElementById('CNPJ').value;
+            let CanalcompraProduto = document.getElementById('CanalcompraProduto').value;
+            let DataCompra = document.getElementById('DataCompra').value;
+            let NumeroCupomFiscal = document.getElementById('NumeroCupomFiscal').value;
+            let ArquivoFiscal = document.getElementById('ArquivoFiscal').files[0]
+
+            const data = {
+                CNPJ: CNPJ,
+                CanalcompraProduto: CanalcompraProduto,
+                DataCompra: DataCompra,
+                NumeroCupomFiscal: NumeroCupomFiscal,
+                ArquivoFiscal: ArquivoFiscal
+            }
+
+            return data
+        }
+
+        Salvar() {
+            $('#submit').click(function () {
+
+                var data = produto.LerDados();
+
+                if (produto.ValidacaoPost(data)) {
+
+                    const formData = new FormData();
+                    formData.append('CNPJ', data.CNPJ);
+                    formData.append('CanalcompraProduto', data.CanalcompraProduto);
+                    formData.append('DataCompra', data.DataCompra);
+                    formData.append('NumeroCupomFiscal', data.NumeroCupomFiscal);
+                    formData.append('ArquivoFiscal', data.ArquivoFiscal);
+
+                    for (var i = 0; i < produto.arrayProduto.length; i++) {
+                        formData.append('Produto[' + i + '].Nome', produto.arrayProduto[i].produto);
+                        formData.append('Produto[' + i + '].Quantidade', produto.arrayProduto[i].quantidade);
+                    }
+
+                    $.ajax({
+                        url: '/Home/Index',
+                        contentType: false,
+                        processData: false,
+                        type: 'POST',
+                        data: formData,
+                        success: function (response) {
+                            toastr.success(response)
+                            produto.LimparCampos()
+                        },
+                        error: function (xhr, status, error) {
+                            toastr.error(xhr.responseText)
+                        }
+                    });
+
+                }
+
+            });
+        }
+
+        ValidacaoPost(data) {
+            if (!produto.ValidarCNPJ(data.CNPJ)) return false
+
+            if (!produto.ValidarCanalDaCompraProuto(data.CanalcompraProduto)) return false
+
+            if (!produto.ValidarDataCompra(data.DataCompra)) return false
+
+            if (!produto.ValidarNumeroCupomFiscal(data.NumeroCupomFiscal)) return false
+
+            if (!produto.ValidarArquivo(data.ArquivoFiscal)) return false
+
+            if (!produto.ValidarProduto()) return false
+
+            return true
+
+        }
+
+        ValidarProduto(){
+ 
+            if (this.arrayProduto.length === 0) {
+                toastr.error("É obrigatorio tem ao menos 1 produto");
+               return false
+            }
+
+            return true
+        }
+
+        ValidacaoEventos() {
+
+            document.getElementById("ArquivoFiscal").addEventListener("change", function () {
+                const file = this.files[0];
+                produto.ValidarArquivo(file)
+            });
+
+            document.getElementById("DataCompra").addEventListener('blur', function () {
+                produto.ValidarDataCompra(this.value);
+            });
+
+            document.getElementById("CNPJ").addEventListener('blur', function () {
+                produto.ValidarCNPJ(this.value);
+
+
+            });
+
+        }
+
+        ValidarNumeroCupomFiscal(CanalProduto) {
+            if (CanalProduto.length < 5) {
+                document.getElementById('NumeroCupomFiscalerro').textContent = 'Número do cupom fiscal deve conter no minimo 5 caracteres';
+                return false
+            }
+            document.getElementById('NumeroCupomFiscalerro').textContent = '';
+            return true
+        }
+
+        ValidarCanalDaCompraProuto(CanalProduto) {
+            if (CanalProduto.length < 5) {
+                document.getElementById('CanalcompraProdutoerro').textContent = 'Canal da compra do produto deve conter no minimo 5 caracteres';
+                return false
+            }
+            document.getElementById('CanalcompraProdutoerro').textContent = '';
+            return true
+        }
+
+        ValidarCNPJ(cnpj) {
+            cnpj = cnpj.replace(/[^\d]+/g, '');
+
+            let inputCNPJ = document.getElementById("CNPJ");
+            let inputCNPJerro = document.getElementById("CNPJerro");
+
+            // Verifica se o CNPJ possui 14 dígitos
+            if (cnpj.length !== 14) {
+                toastr.error('Informe um cnpj válido!')
+                inputCNPJ.value = '';
+                inputCNPJerro.textContent = 'Informe um cnpj válido!';
+                return false;
+            }
+
+            // Verifica se todos os dígitos são iguais (ex: 00.000.000/0000-00)
+            if (/^(\d)\1+$/.test(cnpj)) {
+                toastr.error('Informe um cnpj válido!')
+                inputCNPJ.value = '';
+                inputCNPJerro.textContent = 'Informe um cnpj válido!';
+                return false;
+
+            }
+
+            // Calcula o primeiro dígito verificador
+            let sum = 0;
+            let weight = 2;
+            for (let i = 11; i >= 0; i--) {
+                sum += parseInt(cnpj.charAt(i)) * weight;
+                weight = (weight === 9 ? 2 : weight + 1);
+            }
+            let mod = sum % 11;
+            const firstDigit = (mod < 2 ? 0 : 11 - mod);
+
+            // Calcula o segundo dígito verificador
+            sum = 0;
+            weight = 2;
+            for (let i = 12; i >= 0; i--) {
+                sum += parseInt(cnpj.charAt(i)) * weight;
+                weight = (weight === 9 ? 2 : weight + 1);
+            }
+            mod = sum % 11;
+            const secondDigit = (mod < 2 ? 0 : 11 - mod);
+
+            // Verifica se os dígitos calculados são iguais aos dígitos informados
+            if (parseInt(cnpj.charAt(12)) !== firstDigit || parseInt(cnpj.charAt(13)) !== secondDigit) {
+                toastr.error('Informe um cnpj válido!')
+                inputCNPJerro.textContent = 'Informe um cnpj válido!';
+                inputCNPJ.value = '';
+                return false;
+            }
+            inputCNPJerro.textContent = '';
+            return true;
+        }
+
+        ValidarDataCompra(data) {
+            let dataSelecionada = new Date(data); //data da compra
+            let dataInicio = new Date('2023-05-01');
+            let dataFinal = new Date('2023-06-15');
+
+            if (!(dataSelecionada >= dataInicio && dataSelecionada <= dataFinal)) {
+                toastr.error('Data da compra só pode ser entre 01/05/2023 a 15/06/2023')
+                document.getElementById("DataCompraerro").textContent = 'Data da compra só pode ser entre 01/05/2023 a 15/06/2023';
+                return false
+            }
+            document.getElementById("DataCompraerro").textContent = '';
+            return true
+
+        }
+
+        ValidarArquivo(file) {
+
+            if (file !== undefined) {
+                const allowedTypes = ["image/jpg", "image/png", "application/pdf"];
+
+                if (!allowedTypes.includes(file.type)) {
+                    toastr.error("Formato de arquivo inválido. Por favor, selecione uma imagem ou um arquivo PDF.");
+                    document.getElementById("ArquivoFiscal").value = '';
+                    return false
+                }
+            } else {
+                toastr.error("Arquivo é obrigatório");
+                document.getElementById("ArquivoFiscal").value = '';
+                return false
+            }
+            return true
+        }
+
+        ValidacaoNaTabela(data) {
+            if (data.quantidade > 6) {
+                toastr.error('O máximo de produto é 6');
+                return false
+            }
+            else if (data.produto == '') {
+                toastr.error('Selecione um produto!');
+                return false
+            }
+            else if (data.quantidade == 0) {
+                toastr.error('informe a quantidade do produto');
+                return false
+            }
+            else if ((this.MaxIncremet + data.quantidade) > 6) {
+                toastr.error('O maximo de produto é 6');
+                return false
+            }
+            else {
+                this.MaxIncremet += data.quantidade;
+                return true
+            }
+
+        }
+
+    }
+
+    //Instancia da tabela de produto
+    let table = new DataTable('#myTable', {
+        searching: false,
+        lengthChange: false,
+        info: false,
+        paging: false,
+        ordering: false,
+        lengthMenu: [6]
+    });
+
+    $('.maskCnpj').inputmask({ mask: '99.999.999/9999-99', clearIncomplete: true });
+
+    //Instancia da classe
+    var produto = new CadastroDeNotas();
+
+
+</script>
